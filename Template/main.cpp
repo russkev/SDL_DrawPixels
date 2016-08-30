@@ -65,7 +65,7 @@ void drawLine(const line &lineA, std::uint32_t color, SDL_Surface* surface) {
 		return;
 	}
 	
-	m = deltaY / deltaX;
+	m = deltaY / deltaX; // m is slope of line.
 
 	// // SET DRIVING AND PASSIVE AXIS
 	if (abs(deltaX) >= abs(deltaY)) {
@@ -86,8 +86,9 @@ void drawLine(const line &lineA, std::uint32_t color, SDL_Surface* surface) {
 		if (deltaY >= 0) dInc = 1;
 		if (deltaX >= 0) pInc = 1;
 	}
-
-	e = abs(m) - 1;
+	
+	
+	e = abs(m) - 1; //e is error margin, when > 0, passive gets incremented.
 
 	// // ITERATE THROUGH EACH DRIVING COORDINATE AND DRAW PIXEL
 	while (driving != dEnd) {
