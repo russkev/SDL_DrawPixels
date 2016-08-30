@@ -1,0 +1,5 @@
+[Aa]rtifacts/*
+[Bb]uild/*
+*.VC.db
+*.VC.VC.opendb
+.vs/*
