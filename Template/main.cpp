@@ -1,174 +1,188 @@
-﻿#include <iostream>
+#include <iostream>
 #include <tuple>
 #include <algorithm>
-#include <SDL.h>
 #include <list>
+#include <cassert>
 
+#include <SDL.h>
 
-struct coordinate {
-	int x, y;
+#pragma pack(push, 1)
+struct color_type {
+    color_type (
+        std::uint8_t red    = 0u, 
+        std::uint8_t green  = 0u, 
+        std::uint8_t blue   = 0u, 
+        std::uint8_t alpha  = 0u)
+    :   b (blue), 
+        g (green), 
+        r (red), 
+        a (alpha)
+    {}
+
+    std::uint8_t b, g, r, a;
+};
+#pragma pack(pop)
+
+struct coordinate_type {
+    // Note: Added constructor
+    coordinate_type (int xx = 0, int yy = 0): x (xx), y (yy) {}
+
+    int x, y;
 };
 
-struct line {
-	coordinate start, end;
+struct line_type {
+    // Note: Added constructor
+    line_type (
+        const coordinate_type& a = coordinate_type (), 
+        const coordinate_type& b = coordinate_type (),
+        const color_type& c = color_type ())
+    :   start (a), 
+        end (b),
+        color (c)
+    {}
+
+    coordinate_type start, end;
+    color_type color;
 };
 
-bool checkInBounds(const coordinate &a, SDL_Surface* surface) {
-	if (a.x > 0 && a.y > 0 && a.x <= surface->w && a.y <= surface->h) {
-		return true;
-	}
-	else return false;
+bool checkInBounds (const coordinate_type& a, const SDL_Surface* surface) {
+    if (a.x > 0 && a.y > 0 && a.x <= surface->w && a.y <= surface->h) {
+        return true;
+    } 
+    // Note: Doesn't really need an else here
+    return false;
 }
 
-
-void drawPixel(const coordinate &coordA, std::uint32_t color, SDL_Surface* surface) {
-	if (!checkInBounds(coordA, surface)) {
-		std::cout << "Pixel not in bounds" << std::endl;
-		return;
-	}
-	reinterpret_cast<std::uint32_t*> (surface->pixels)[coordA.x + coordA.y * surface->w] = color;
+// Note: clamps x to range [a; b], useful function to have
+template <typename T> 
+inline T clamp (T x, T a, T b) { 
+    return std::max (std::min (x, b), a); 
 }
 
-void drawLine(const line &lineA, std::uint32_t color, SDL_Surface* surface) {
-	if (!checkInBounds(lineA.start, surface) || !checkInBounds(lineA.end, surface)) {
-		std::cout << "Line not in bounds" << std::endl;
-		return;
-	}
-
-	// // INITIALIZE VARIABLES
-	coordinate drawCoord;
-	drawCoord.x = lineA.start.x;
-	drawCoord.y = lineA.start.y;
-	int driving, dEnd, passive, pEnd, i, dInc = -1, pInc = -1; // D for Driving, P for Passive
-	double m = 0, e, deltaX, deltaY;
-	bool flipped = false;
-
-	deltaX = lineA.end.x - lineA.start.x;
-	deltaY = lineA.end.y - lineA.start.y;
-
-	
-	// // CASE WHERE LINE IS POINT
-	if (deltaX == 0 && deltaY == 0) { 
-		drawPixel(drawCoord, color, surface);
-		return;
-	}
-
-	// // CASE WHERE LINE IS STRAIGHT UP DOWN
-	if (deltaX == 0) { 
-		if (deltaY < 0) {
-			drawCoord.y = lineA.end.y;
-		}
-		for (i = 0; i < abs(deltaY); ++i) {
-			drawPixel(drawCoord, color, surface);
-			drawCoord.y = drawCoord.y + 1;
-		}
-		return;
-	}
-	
-	m = deltaY / deltaX; // m is slope of line.
-
-	// // SET DRIVING AND PASSIVE AXIS
-	if (abs(deltaX) >= abs(deltaY)) {
-		driving = lineA.start.x;
-		dEnd = lineA.end.x;
-		passive = lineA.start.y;
-		pEnd = lineA.end.y;
-		if (deltaX >= 0) dInc = 1;
-		if (deltaY >= 0) pInc = 1;
-	}
-	else {
-		driving = lineA.start.y;
-		dEnd = lineA.end.y;
-		passive = lineA.start.x;
-		pEnd = lineA.end.x;
-		m = 1 / m;
-		flipped = true;
-		if (deltaY >= 0) dInc = 1;
-		if (deltaX >= 0) pInc = 1;
-	}
-	
-	
-	e = abs(m) - 1; //e is error margin, when > 0, passive gets incremented.
-
-	// // ITERATE THROUGH EACH DRIVING COORDINATE AND DRAW PIXEL
-	while (driving != dEnd) {
-
-		drawCoord.x = passive;
-		drawCoord.y = driving;
-		if (!flipped) std::swap(drawCoord.x, drawCoord.y);
-
-		drawPixel(drawCoord, color, surface);
-
-		if (e >= 0) {
-			passive += pInc;
-			--e;
-		}
-		driving += dInc;
-		e += abs(m);
-	}
+void drawPixel (const coordinate_type& coord, const color_type& color, SDL_Surface* surface) {
+    if (!checkInBounds (coord, surface)) {        
+        return;
+    }
+    reinterpret_cast<color_type*> (surface->pixels) [coord.x + coord.y * surface->w] = color;
 }
 
-int main(int, char**) {
-	SDL_Init(SDL_INIT_EVERYTHING);
-	std::atexit(&SDL_Quit);
+void drawHLine (const line_type& lineA, const color_type& color, SDL_Surface* surface) {
+    assert (lineA.start.y  == lineA.end.y);    
+    const auto dx = clamp (lineA.end.x - lineA.start.x, -1, 1);
+    for (auto x = lineA.start.x; x != lineA.end.x; x += dx) {
+        drawPixel (coordinate_type (x, lineA.start.y), color, surface);
+    }
+}
 
+void drawVLine (const line_type& lineA, const color_type& color, SDL_Surface* surface) {
+    assert (lineA.start.x  == lineA.end.x);
+    const auto dy = clamp (lineA.end.y - lineA.start.y, -1, 1);
+    for (auto y = lineA.start.y; y != lineA.end.y; y += dy) {
+        drawPixel (coordinate_type (lineA.start.x, y), color, surface);
+    }
+}
 
+void drawLine (const line_type& lineA, SDL_Surface* surface) {
+    if (!checkInBounds (lineA.start, surface) && !checkInBounds (lineA.end, surface)) {
+        //Todo: Actually you should clip the line here, 
+        //      and only ignore the line completely
+        //      if both points are out of bounds.
+        return;
+    }
+    
+    // Note : should be int, comparing floats and doubles is not a good idea
+    auto deltaX = lineA.end.x - lineA.start.x;
+    auto deltaY = lineA.end.y - lineA.start.y;
 
+    // // CASE WHERE LINE IS POINT
+    if (deltaX == 0 && deltaY == 0) {
+        // Todo : actually if both are 0 , the line is of 0 length, means not even one point
+        return;
+    }
 
-	auto s_window = SDL_CreateWindow("Fuck me", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280u, 720u, 0u);
-	auto s_surface = SDL_GetWindowSurface(s_window);
-	SDL_FillRect(s_surface, nullptr, 0xFFFFFFFF);
+    // Note: can handle horizontal and vertical lines as separate case
+    if (deltaX == 0) return drawVLine (lineA, lineA.color, surface);
+    if (deltaY == 0) return drawHLine (lineA, lineA.color, surface);
+                
 
-	SDL_Event s_event;
-	auto s_last_x = 0;
-	auto s_last_y = 0;
-	auto s_size = 0;
+    auto driving = lineA.start.x;
+    auto passive = lineA.start.y;
+    auto dEnd = lineA.end.x;
+    auto pEnd = lineA.end.y;
+    auto dInc = clamp (deltaX, -1, 1);
+    auto pInc = clamp (deltaY, -1, 1);
 
+    const auto flipped = abs (deltaX) < abs (deltaY);
+    if (flipped) {
+        std::swap (driving, passive);
+        std::swap (dEnd, pEnd);        
+        std::swap (dInc, pInc);
+    }
 
-	// // DEFINE LINE PROPERTIES // //
-	int red = 0xFFFF0000;
+    // Note : 1.0* , to force one of the variables into a double, and then the whole expression into double
+    //        also renamed to a more sensible name
+    auto slope = flipped ? deltaX / (1.0*deltaY)  
+                         : deltaY / (1.0*deltaX); 
+        // when > 0, passive gets incremented.
+    auto error = abs (slope) - 1.0; 
+    
+    while (driving != dEnd) { 
+        drawPixel (flipped ? coordinate_type (passive, driving) 
+                           : coordinate_type (driving, passive), 
+                   lineA.color, surface);
 
-	coordinate pixelCoord;
-	pixelCoord.x = 10; pixelCoord.y = 10;
-	drawPixel(pixelCoord, red, s_surface);
+        if (error >= 0.0) {
+            passive += pInc;
+            --error;
+        }
+        driving += dInc;
+        error += abs (slope);
+    }
+}
 
-	int startX = 300;
-	int startY = 300;
-	int endX[] = { 300, 300, 380 ,450, 480, 500, 480, 450, 380, 300, 220, 150, 120, 100, 120, 150, 200 };
-	int endY[] = { 300, 100, 130 ,150, 220, 300, 380, 450, 480, 500, 480, 450, 390, 300, 220, 150, 130 };
-	int numLines = sizeof(endX) / sizeof(endX[0]);
+int main (int, char**) {
+    SDL_Init (SDL_INIT_EVERYTHING);
+    std::atexit (&SDL_Quit);
 
+    auto s_window = SDL_CreateWindow ("Pretty little lines", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280u, 720u, 0u);
+    auto s_surface = SDL_GetWindowSurface (s_window);
 
-	// // CREATE LINE DATA STRUCTURES // //
-	std::list<line> lines;
-	for (int i = 0; i < numLines; ++i) {
-		coordinate tempStart;
-		coordinate tempEnd;
-		line tempLine;
-		tempStart.x = startX;
-		tempStart.y = startY;
-		tempEnd.x = endX[i];
-		tempEnd.y = endY[i];
-		tempLine.start = tempStart;
-		tempLine.end = tempEnd;
-		lines.push_back(tempLine);
-	}
+    SDL_FillRect (s_surface, nullptr, 0xFFFFFFFF);
 
-	// // DRAW LINES // //
-	std::list<line>::iterator it = lines.begin();
-	while (it != lines.end()) {
-		drawLine(*it, red, s_surface);
-		it++;
-	}
+    static const auto start = coordinate_type (300, 300);
+    static const auto lines = std::list<line_type>{
+        {start, {300, 100}, {255,   0,   0}},
+        {start, {380, 130}, {  0, 255,   0}},
+        {start, {450, 150}, {  0,   0, 255}},
+        {start, {480, 220}, {255, 255,   0}},
+        {start, {500, 300}, {255,   0, 255}},
+        {start, {480, 380}, {  0, 255, 255}},
+        {start, {450, 450}, {127, 127,   0}},
+        {start, {380, 480}, {127,   0, 127}},
+        {start, {300, 500}, {  0, 127, 127}},
+        {start, {220, 480}, {255, 255, 127}},
+        {start, {150, 450}, {255, 127, 255}},
+        {start, {120, 390}, {127, 255, 255}},
+        {start, {100, 300}, {127,   0,   0}},
+        {start, {120, 220}, {  0, 127,   0}},
+        {start, {150, 150}, {  0,   0, 127}},
+        {start, {200, 130}, {  0,   0,   0}}
+        
+    };
 
+    for (const auto& l : lines) {       
+        drawLine (l, s_surface);
+    }
 
+    SDL_Event s_event;
+    while (!SDL_QuitRequested ()) {
+        if (SDL_PollEvent (&s_event)) {
+            //Note: Need to pull all events before doing anything else
+            continue;
+        }
+        SDL_UpdateWindowSurface (s_window);
+    }
 
-
-
-	while (!SDL_QuitRequested()) {
-		SDL_UpdateWindowSurface(s_window);
-	}
-
-	SDL_DestroyWindow(s_window);
-	return 0;
+    SDL_DestroyWindow (s_window);
+    return 0;
 }
