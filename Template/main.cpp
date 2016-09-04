@@ -166,22 +166,28 @@ void drawLine(const line_type& lineA, SDL_Surface* surface) {
 }
 
 void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
-	int x = circle.radius;
-	int y = 0;
+	int x_n = circle.radius;
+	int y_n = 0;
 	int err = 0;
 
-	coordinate_type drawCoord = (circle.centre.x + x, circle.centre.y + y);
-	drawPixel(drawCoord, circle.color, s_surface);
+	while (x_n >= y_n) {
+		//coordinate_type drawCoord = { circle.centre.x + x_n, circle.centre.y + y_n };
+		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x - x_n, circle.centre.y - y_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x + y_n, circle.centre.y + x_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x + y_n, circle.centre.y - x_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x - y_n, circle.centre.y + x_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x - y_n, circle.centre.y - x_n }, circle.color, s_surface);
 
-	while (x >= y) {
 
-
-		++y;
-		err += 1 + 2 * y;
-		if (2 * err - x) + 1 > 0;
+		++y_n;
+		err += (1 + 2 * y_n);
+		if (2 * (err - x_n) + 1 > 0)
 		{
-			x -= 1;
-			err += 1 - 2 * x;
+			--x_n;
+			err += 1 - 2 * x_n;
 		}
 	}
 }
@@ -190,16 +196,13 @@ void drawClock(SDL_Surface* s_surface) {
 	// TODO : Write code to draw a clock here
 
 	// ??? Why static here?
-	static const auto start = coordinate_type(300, 300);
-	static const int rad = 150;
-	auto circleA = circle_type(start, rad, { 0,0,0 });
+	//static const auto start = coordinate_type(300, 300);
+	//static const int rad = 150;
+	auto circleA = circle_type({ 640, 360 }, 300, color_type::blue);
 	
 	drawCircle(circleA, s_surface);
 
-	SDL_FillRect(s_surface, nullptr, 0xFFFFFFFF);
 
-	line_type lineA({ 400, 400 }, { 500, 500 }, { 0, 0, 0 });
-	drawLine(lineA, s_surface);
 
 
 }
