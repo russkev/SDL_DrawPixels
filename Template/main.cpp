@@ -189,6 +189,18 @@ void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 void drawClock(SDL_Surface* s_surface) {
 	// TODO : Write code to draw a clock here
 
+	// ??? Why static here?
+	static const auto start = coordinate_type(300, 300);
+	static const int rad = 150;
+	auto circleA = circle_type(start, rad, { 0,0,0 });
+	
+	drawCircle(circleA, s_surface);
+
+	SDL_FillRect(s_surface, nullptr, 0xFFFFFFFF);
+
+	line_type lineA({ 400, 400 }, { 500, 500 }, { 0, 0, 0 });
+	drawLine(lineA, s_surface);
+
 
 }
 
@@ -199,45 +211,7 @@ int main(int, char**) {
 	auto s_window = SDL_CreateWindow("Pretty little lines", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280u, 720u, 0u); // Better than the prev window name I guess
 	auto s_surface = SDL_GetWindowSurface(s_window);
 
-	SDL_FillRect(s_surface, nullptr, 0xFFFFFFFF);
 
-	// ??? Why static here?
-	//static const auto start = coordinate_type(300, 300);
-	//static const int rad = 150;
-	//auto circleA = circle_type();
-	//circleA.centre = start;
-	//circleA.radius = rad;
-	//circleA.color = color_type::blue;
-	//
-	//drawCircle(circleA, s_surface);
-
-	line_type lineA((400, 400), (500, 500), (255, 255, 255));
-	drawLine(lineA, s_surface);
-
-	static const auto start = coordinate_type(300, 300);
-	static const auto lines = std::list<line_type>{
-		{ start,{ 300, 100 },{ 255,   0,   0 } },
-		{ start,{ 380, 130 },{   0, 255,   0 } },
-		{ start,{ 450, 150 },{   0,   0, 255 } },
-		{ start,{ 480, 220 },{ 255, 255,   0 } },
-		{ start,{ 500, 300 },{ 255,   0, 255 } },
-		{ start,{ 480, 380 },{   0, 255, 255 } },
-		{ start,{ 450, 450 },{ 127, 127,   0 } },
-		{ start,{ 380, 480 },{ 127,   0, 127 } },
-		{ start,{ 300, 500 },{   0, 127, 127 } },
-		{ start,{ 220, 480 },{ 255, 255, 127 } },
-		{ start,{ 150, 450 },{ 255, 127, 255 } },
-		{ start,{ 120, 390 },{ 127, 255, 255 } },
-		{ start,{ 100, 300 },{ 127,   0,   0 } },
-		{ start,{ 120, 220 },{   0, 127,   0 } },
-		{ start,{ 150, 150 },{   0,   0, 127 } },
-		{ start,{ 200, 130 },{   0,   0,   0 } }
-
-	};
-
-	for (const auto& l : lines) {
-		drawLine(l, s_surface);
-	}
 
 
 	SDL_Event s_event;
