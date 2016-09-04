@@ -8,6 +8,9 @@
 
 #include <SDL.h>
 
+const double pi = 3.14159265;
+//CPP Reference had '#define PI 3.14159265' but I couldn't get that to work
+
 #pragma pack(push, 1)
 struct color_type {
 	color_type(
@@ -165,6 +168,25 @@ void drawLine(const line_type& lineA, SDL_Surface* surface) {
 	}
 }
 
+double degToRad(double theta) {
+	double result = theta*pi/180;
+	return result;
+}
+
+void drawRadialLine(const coordinate_type centre, double theta, int radiusStart, int radiusEnd, SDL_Surface* surface) {
+	theta = degToRad(theta);
+	coordinate_type endCoord;
+	double end_x = radiusEnd * cos(theta) + centre.x;
+	double end_y = radiusEnd * sin(theta) + centre.y;
+
+	endCoord = { (int)round(end_x), (int)round(end_y) };
+
+	drawLine({ centre, endCoord }, surface);
+
+
+	return;
+}
+
 void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 	int x_n = circle.radius;
 	int y_n = 0;
@@ -198,9 +220,18 @@ void drawClock(SDL_Surface* s_surface) {
 	// ??? Why static here?
 	//static const auto start = coordinate_type(300, 300);
 	//static const int rad = 150;
-	auto circleA = circle_type({ 640, 360 }, 300, color_type::blue);
+	coordinate_type centreSurface = { 640, 360 };
+
+	auto circleA = circle_type(centreSurface, 300, color_type::blue);
 	
 	drawCircle(circleA, s_surface);
+
+	for (int i = 0; i < 360; i += 6) {
+		drawRadialLine(centreSurface, i, 200, 300, s_surface);
+	}
+	
+
+	
 
 
 
