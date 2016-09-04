@@ -155,7 +155,7 @@ int main(int, char**) {
 	}
 
 	// // DRAW LINES // //
-	std::list<line>::iterator it = lines.begin();
+	auto it = lines.begin();
 	while (it != lines.end()) {
 		drawLine(*it, red, s_surface);
 		it++;
