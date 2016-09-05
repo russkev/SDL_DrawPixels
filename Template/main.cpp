@@ -179,12 +179,12 @@ void drawRadialLine(const coordinate_type centre, double theta, int radiusStart,
 	theta = degToRad(theta);
 	coordinate_type startCoord, endCoord;
 	startCoord = {
-		(int)round(radiusStart * cos(theta) + centre.x),
-		(int)round(radiusStart * sin(theta) + centre.y)
+		(int)round(radiusStart * sin(theta) + centre.x),
+		(int)round(radiusStart * -cos(theta) + centre.y)
 	};
 	endCoord = {
-		(int)round(radiusEnd * cos(theta) + centre.x),
-		(int)round(radiusEnd * sin(theta) + centre.y)
+		(int)round(radiusEnd * sin(theta) + centre.x),
+		(int)round(radiusEnd * -cos(theta) + centre.y)
 	};
 
 	drawLine({ startCoord, endCoord, color }, surface);
@@ -258,9 +258,9 @@ void drawClock(SDL_Surface* s_surface) {
 	double minute = localTime->tm_min;
 	double hour   = localTime->tm_hour;
 
-	second = (second * 6) - 90;
-	minute = (minute * 6 + second / 60) -90;
-	hour   = (hour * 30 + minute / 2) -90;
+	second = (second * 6);// -90;
+	minute = (minute * 6 + second / 60);// -90;
+	hour = (hour * 30 + minute / 12);// -90;
 
 
 	drawRadialLine(centreSurface, second, 0, clockRadius -  40, color_type::red,     s_surface);
