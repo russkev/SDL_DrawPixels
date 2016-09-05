@@ -173,15 +173,19 @@ double degToRad(double theta) {
 	return result;
 }
 
-void drawRadialLine(const coordinate_type centre, double theta, int radiusStart, int radiusEnd, SDL_Surface* surface) {
+void drawRadialLine(const coordinate_type centre, double theta, int radiusStart, int radiusEnd, color_type color, SDL_Surface* surface) {
 	theta = degToRad(theta);
-	coordinate_type endCoord;
-	double end_x = radiusEnd * cos(theta) + centre.x;
-	double end_y = radiusEnd * sin(theta) + centre.y;
+	coordinate_type startCoord, endCoord;
+	startCoord = {
+		(int)round(radiusStart * cos(theta) + centre.x),
+		(int)round(radiusStart * sin(theta) + centre.y)
+	};
+	endCoord = {
+		(int)round(radiusEnd * cos(theta) + centre.x),
+		(int)round(radiusEnd * sin(theta) + centre.y)
+	};
 
-	endCoord = { (int)round(end_x), (int)round(end_y) };
-
-	drawLine({ centre, endCoord }, surface);
+	drawLine({ startCoord, endCoord, color }, surface);
 
 
 	return;
@@ -214,6 +218,23 @@ void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 	}
 }
 
+void drawMinuteLine(const coordinate_type &centre, int radius, SDL_Surface* s_surface) {
+	for (int i = 0; i < 360; i += 6) {
+		if (i % 30 != 0) {
+			drawRadialLine(centre, i, radius - 20, radius, color_type::green, s_surface);
+		}
+
+	}
+
+}
+
+void drawHourLine(const coordinate_type &centre, int radius, SDL_Surface* s_surface) {
+	for (int i = 0; i < 360; i += 30) {
+			drawRadialLine(centre, i, radius - 40, radius, color_type::red, s_surface);
+	}
+
+}
+
 void drawClock(SDL_Surface* s_surface) {
 	// TODO : Write code to draw a clock here
 
@@ -221,20 +242,24 @@ void drawClock(SDL_Surface* s_surface) {
 	//static const auto start = coordinate_type(300, 300);
 	//static const int rad = 150;
 	coordinate_type centreSurface = { 640, 360 };
+	int clockRadius = 300;
 
-	auto circleA = circle_type(centreSurface, 300, color_type::blue);
+	auto circleA = circle_type(centreSurface, clockRadius, color_type::blue);
 	
 	drawCircle(circleA, s_surface);
 
-	for (int i = 0; i < 360; i += 6) {
-		drawRadialLine(centreSurface, i, 200, 300, s_surface);
-	}
-	
+	drawMinuteLine(centreSurface, clockRadius, s_surface);
+	drawHourLine(centreSurface, clockRadius, s_surface);
 
 	
 
 
 
+
+	
+
+
+	return;
 
 }
 
