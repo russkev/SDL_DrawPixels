@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cmath>
 #include <ctime>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <SDL.h>
 
@@ -197,7 +199,6 @@ void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 	int err = 0;
 
 	while (x_n >= y_n) {
-		//coordinate_type drawCoord = { circle.centre.x + x_n, circle.centre.y + y_n };
 		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n }, circle.color, s_surface);
 		drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }, circle.color, s_surface);
 		drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
@@ -235,30 +236,36 @@ void drawHourLine(const coordinate_type &centre, int radius, SDL_Surface* s_surf
 
 }
 
+void drawHand(const coordinate_type &centre, double angle, int radius, const color_type &color, SDL_Surface* s_surface) {
+	drawRadialLine(centre, angle, 0, radius, color, s_surface);
+}
+
 void drawClock(SDL_Surface* s_surface) {
 	// TODO : Write code to draw a clock here
 
 	// ??? Why static here?
-	//static const auto start = coordinate_type(300, 300);
-	//static const int rad = 150;
-	coordinate_type centreSurface = { 640, 360 };
-	int clockRadius = 300;
-
-	auto circleA = circle_type(centreSurface, clockRadius, color_type::blue);
+	static const coordinate_type centreSurface = { 640, 360 };
+	static const int clockRadius = 300;
+	static const auto circleA = circle_type(centreSurface, clockRadius, color_type::blue);
 	
 	drawCircle(circleA, s_surface);
-
 	drawMinuteLine(centreSurface, clockRadius, s_surface);
 	drawHourLine(centreSurface, clockRadius, s_surface);
 
-	
+	std::time_t clockTime = std::time(NULL);
+	tm * localTime = localtime(&clockTime);
+	double second = localTime->tm_sec;
+	double minute = localTime->tm_min;
+	double hour   = localTime->tm_hour;
+
+	second = (second * 6) - 90;
+	minute = (minute * 6 + second / 60) -90;
+	hour   = (hour * 30 + minute / 2) -90;
 
 
-
-
-	
-
-
+	drawRadialLine(centreSurface, second, 0, clockRadius -  40, color_type::red,     s_surface);
+	drawRadialLine(centreSurface, minute, 0, clockRadius -  80, color_type::magenta, s_surface);
+	drawRadialLine(centreSurface, hour, 0, clockRadius - 120, color_type::cyan,    s_surface);
 	return;
 
 }
