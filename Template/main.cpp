@@ -30,6 +30,7 @@ public:
 	std::uint8_t b, g, r, a;
 
 	color_type operator *(float);
+	color_type operator +(color_type);
 
 	static const color_type black;
 	static const color_type red;
@@ -51,11 +52,25 @@ const color_type color_type::magenta = color_type(0, 255, 255);
 const color_type color_type::cyan = color_type(255, 0, 255);
 const color_type color_type::white = color_type(255, 255, 255);
 
+// Note: clamps x to range [a; b], useful function to have
+template <typename T>
+inline T clamp(T x, T a, T b) {
+	return std::max(std::min(x, b), a);
+}
+
 color_type color_type::operator*(float multiplier) {
 	color_type adjustedColor;
-	adjustedColor.r = r * multiplier;
-	adjustedColor.g = g * multiplier;
-	adjustedColor.b = b * multiplier;
+	adjustedColor.r = r * clamp(multiplier, float(0), float(1));
+	adjustedColor.g = g * clamp(multiplier, float(0), float(1));
+	adjustedColor.b = b * clamp(multiplier, float(0), float(1));
+	return adjustedColor;
+}
+
+color_type color_type::operator+(color_type addColor) {
+	color_type adjustedColor;
+	adjustedColor.r = clamp(r + addColor.r, 0, 255);
+	adjustedColor.g = clamp(g + addColor.g, 0, 255);
+	adjustedColor.b = clamp(b + addColor.b, 0, 255);
 	return adjustedColor;
 }
 
@@ -106,12 +121,6 @@ bool checkInBounds(const coordinate_type& a, const SDL_Surface* surface) {
 	return false;
 }
 
-// Note: clamps x to range [a; b], useful function to have
-template <typename T>
-inline T clamp(T x, T a, T b) {
-	return std::max(std::min(x, b), a);
-}
-
 void drawPixel(const coordinate_type& coord, const color_type& color, SDL_Surface* surface) {
 	if (!checkInBounds(coord, surface)) {
 		return;
@@ -124,7 +133,7 @@ int intPart(float x) {
 }
 
 int round(int x) {
-	return x + 0.5;
+	return int(x + 0.5);
 }
 
 float fractionalPart(float x) {
@@ -136,6 +145,11 @@ float fractionalPart(float x) {
 
 float rFractionalPart(float x) {
 	return 1 - fractionalPart(x);
+}
+
+color_type pixelMix(color_type foreground, color_type background, float fraction) {
+	color_type newColor = background * (1 - fraction) + foreground * fraction;
+	return newColor;
 }
 
 
@@ -156,17 +170,19 @@ void drawVLine(const line_type& lineA, const color_type& color, SDL_Surface* sur
 	}
 }
 
-void drawLine(const line_type& lineIn, SDL_Surface* surface) {
+void drawLine(const line_type& lineIn, color_type bgColor, SDL_Surface* surface) {
 	if (!checkInBounds(lineIn.start, surface) || !checkInBounds(lineIn.end, surface)) {
 		return;
 	}
+	//Should I be declaring all variable here at the begining?
+
 	line_type lineA = lineIn; //Possibly over complicating things here
+	
+	if (lineA.end.x - lineA.start.x == 0) return drawVLine(lineA, lineA.color, surface);
+	if (lineA.end.y - lineA.start.y == 0) return drawHLine(lineA, lineA.color, surface);
+
 
 	bool steep = (abs(lineIn.end.y - lineIn.start.y) > abs(lineIn.end.x - lineIn.start.x));
-
-
-	
-
 
 	if (steep) {
 		std::swap(lineA.start.x, lineA.start.y);
@@ -184,58 +200,81 @@ void drawLine(const line_type& lineIn, SDL_Surface* surface) {
 		return;
 	}
 
-	if (deltaX == 0) return drawVLine(lineA, lineA.color, surface);
-	if (deltaY == 0) return drawHLine(lineA, lineA.color, surface);
-
-	auto slope = deltaY / deltaX;
+	float slope = float(deltaY) / float(deltaX);
 	
 	//DRAW FIRST END POINT
 	auto xEnd = round(lineA.start.x);
-	auto yEnd = lineA.start.y + slope + (xEnd - lineA.start.x);
-	float xGap = rFractionalPart(lineA.start.x + 0.5);
+	auto yEnd = lineA.start.y + slope * (xEnd - lineA.start.x);
+	auto xGap = rFractionalPart(lineA.start.x + 0.5);
 	auto xPixel1 = xEnd;
 	auto yPixel1 = intPart(yEnd);
 
-	color_type temp = lineA.color*0.5;
+	color_type tempCol;
+	tempCol.r = 160;
+	tempCol.g = 211;
+	tempCol.b = 79;
+
+	float mix = 0.5;
+	color_type tempCol2 = tempCol + color_type::blue;
+	color_type tempCol3 = tempCol * 0.1;
+	color_type tempCol4 = pixelMix(tempCol, bgColor, mix);
+
+
+	color_type pixel1Color = pixelMix(lineA.color, bgColor, rFractionalPart(yEnd)*xGap);
+	color_type pixel2Color = pixelMix(lineA.color, bgColor, fractionalPart(yEnd)*xGap);
 
 
 
 	if (steep){
-		drawPixel({ yPixel1, xPixel1 }, lineA.color*fractionalPart(yEnd)*xGap, surface);
+		drawPixel({ yPixel1,   xPixel1 }, pixel1Color, surface);
+		drawPixel({ yPixel1+1, xPixel1 }, pixel2Color, surface);
+	}
+	else {
+		drawPixel({ xPixel1, yPixel1     }, pixel1Color, surface);
+		drawPixel({ xPixel1, yPixel1 + 1 }, pixel2Color, surface);
 	}
 
+	float interY = yEnd + slope;
+	
+	//DRAW SECOND END POINT
+	xEnd = round(lineA.end.x);
+	yEnd = lineA.end.y + slope * (xEnd - lineA.start.x);
+	xGap = fractionalPart(lineA.start.x + 0.5);
+	auto xPixel2 = xEnd;
+	auto yPixel2 = intPart(yEnd);
+
+	pixel1Color = pixelMix(lineA.color, bgColor, rFractionalPart(yEnd)*xGap);
+	pixel2Color = pixelMix(lineA.color, bgColor, fractionalPart(yEnd)*xGap);
 
 
+	if (steep) {
+		drawPixel({ yPixel2,   xPixel2 }, pixel1Color, surface);
+		drawPixel({ yPixel2 + 1, xPixel2 }, pixel2Color, surface);
+	}
+	else {
+		drawPixel({ xPixel2, yPixel2 }, pixel1Color, surface);
+		drawPixel({ xPixel2, yPixel2 + 1 }, pixel2Color, surface);
+	}
 
-
-	////auto driving = lineA.start.x;
-	////auto passive = lineA.start.y;
-	////auto dEnd = lineA.end.x;
-	////auto pEnd = lineA.end.y;
-	////auto dInc = clamp(deltaX, -1, 1);
-	////auto pInc = clamp(deltaY, -1, 1);
-
-	////const auto flipped = abs(deltaX) < abs(deltaY);
-	////if (flipped) {
-	////	std::swap(driving, passive);
-	////	std::swap(dEnd, pEnd);
-	////	std::swap(dInc, pInc);
-	////}
-
-	////auto error = abs(slope) - 1.0;
-
-	////while (driving != dEnd) {
-	////	drawPixel(flipped ? coordinate_type(passive, driving)
-	////		: coordinate_type(driving, passive),
-	////		lineA.color, surface);
-
-	////	if (error >= 0.0) {
-	////		passive += pInc;
-	////		--error;
-	////	}
-	////	driving += dInc;
-	////	error += abs(slope);
-	////}
+	//MAIN LOOP
+	if (steep) {
+		for (int x = xPixel1 + 1; x <= xPixel2 - 1; ++x) {
+			pixel1Color = pixelMix(lineA.color, bgColor, rFractionalPart(interY));
+			pixel2Color = pixelMix(lineA.color, bgColor, fractionalPart(interY));
+			drawPixel({ intPart(interY),     x }, pixel1Color, surface);
+			drawPixel({ intPart(interY) + 1, x }, pixel2Color, surface);
+			interY += slope;
+		}
+	}
+	else {
+		for (int x = xPixel1 + 1; x <= xPixel2 - 1; ++x) {
+			pixel1Color = pixelMix(lineA.color, bgColor, rFractionalPart(interY));
+			pixel2Color = pixelMix(lineA.color, bgColor, fractionalPart(interY));
+			drawPixel({ x, intPart(interY)     }, pixel1Color, surface);
+			drawPixel({ x, intPart(interY) + 1 }, pixel2Color, surface);
+			interY += slope;
+		}
+	}
 }
 
 double degToRad(double theta) {
@@ -255,7 +294,7 @@ void drawRadialLine(const coordinate_type centre, double theta, int radiusStart,
 		(int)round(radiusEnd * -cos(theta) + centre.y)
 	};
 
-	drawLine({ startCoord, endCoord, color }, surface);
+	drawLine({ startCoord, endCoord, color }, color_type::white, surface);
 
 
 	return;
