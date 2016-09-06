@@ -14,7 +14,8 @@ const double pi = 3.14159265;
 //CPP Reference had '#define PI 3.14159265' but I couldn't get that to work
 
 #pragma pack(push, 1)
-struct color_type {
+class color_type {
+public:
 	color_type(
 		std::uint8_t red = 0u,
 		std::uint8_t green = 0u,
@@ -27,6 +28,8 @@ struct color_type {
 	{}
 
 	std::uint8_t b, g, r, a;
+
+	color_type operator *(float);
 
 	static const color_type black;
 	static const color_type red;
@@ -47,6 +50,16 @@ const color_type color_type::yellow = color_type(255, 255, 0);
 const color_type color_type::magenta = color_type(0, 255, 255);
 const color_type color_type::cyan = color_type(255, 0, 255);
 const color_type color_type::white = color_type(255, 255, 255);
+
+color_type color_type::operator*(float multiplier) {
+	color_type adjustedColor;
+	adjustedColor.r = r * multiplier;
+	adjustedColor.g = g * multiplier;
+	adjustedColor.b = b * multiplier;
+	return adjustedColor;
+}
+
+
 
 struct coordinate_type {
 	// Note: Added constructor
@@ -106,6 +119,27 @@ void drawPixel(const coordinate_type& coord, const color_type& color, SDL_Surfac
 	reinterpret_cast<color_type*> (surface->pixels)[coord.x + coord.y * surface->w] = color;
 }
 
+int intPart(float x) {
+	return int(x);
+}
+
+int round(int x) {
+	return x + 0.5;
+}
+
+float fractionalPart(float x) {
+	if (x < 0) {
+		return 1 - (x - floor(x));
+	}
+	return x - floor(x);
+}
+
+float rFractionalPart(float x) {
+	return 1 - fractionalPart(x);
+}
+
+
+
 void drawHLine(const line_type& lineA, const color_type& color, SDL_Surface* surface) {
 	assert(lineA.start.y == lineA.end.y);
 	const auto dx = clamp(lineA.end.x - lineA.start.x, -1, 1);
@@ -122,9 +156,25 @@ void drawVLine(const line_type& lineA, const color_type& color, SDL_Surface* sur
 	}
 }
 
-void drawLine(const line_type& lineA, SDL_Surface* surface) {
-	if (!checkInBounds(lineA.start, surface) && !checkInBounds(lineA.end, surface)) {
+void drawLine(const line_type& lineIn, SDL_Surface* surface) {
+	if (!checkInBounds(lineIn.start, surface) || !checkInBounds(lineIn.end, surface)) {
 		return;
+	}
+	line_type lineA = lineIn; //Possibly over complicating things here
+
+	bool steep = (abs(lineIn.end.y - lineIn.start.y) > abs(lineIn.end.x - lineIn.start.x));
+
+
+	
+
+
+	if (steep) {
+		std::swap(lineA.start.x, lineA.start.y);
+		std::swap(lineA.end.x, lineA.end.y);
+	}
+	if(lineA.start.x > lineA.end.x){
+		std::swap(lineA.start.x, lineA.end.x);
+		std::swap(lineA.start.y, lineA.end.y);
 	}
 
 	auto deltaX = lineA.end.x - lineA.start.x;
@@ -137,37 +187,55 @@ void drawLine(const line_type& lineA, SDL_Surface* surface) {
 	if (deltaX == 0) return drawVLine(lineA, lineA.color, surface);
 	if (deltaY == 0) return drawHLine(lineA, lineA.color, surface);
 
+	auto slope = deltaY / deltaX;
+	
+	//DRAW FIRST END POINT
+	auto xEnd = round(lineA.start.x);
+	auto yEnd = lineA.start.y + slope + (xEnd - lineA.start.x);
+	float xGap = rFractionalPart(lineA.start.x + 0.5);
+	auto xPixel1 = xEnd;
+	auto yPixel1 = intPart(yEnd);
 
-	auto driving = lineA.start.x;
-	auto passive = lineA.start.y;
-	auto dEnd = lineA.end.x;
-	auto pEnd = lineA.end.y;
-	auto dInc = clamp(deltaX, -1, 1);
-	auto pInc = clamp(deltaY, -1, 1);
+	color_type temp = lineA.color*0.5;
 
-	const auto flipped = abs(deltaX) < abs(deltaY);
-	if (flipped) {
-		std::swap(driving, passive);
-		std::swap(dEnd, pEnd);
-		std::swap(dInc, pInc);
+
+
+	if (steep){
+		drawPixel({ yPixel1, xPixel1 }, lineA.color*fractionalPart(yEnd)*xGap, surface);
 	}
 
-	auto slope = flipped ? deltaX / (1.0*deltaY)
-		: deltaY / (1.0*deltaX);
-	auto error = abs(slope) - 1.0;
 
-	while (driving != dEnd) {
-		drawPixel(flipped ? coordinate_type(passive, driving)
-			: coordinate_type(driving, passive),
-			lineA.color, surface);
 
-		if (error >= 0.0) {
-			passive += pInc;
-			--error;
-		}
-		driving += dInc;
-		error += abs(slope);
-	}
+
+
+	////auto driving = lineA.start.x;
+	////auto passive = lineA.start.y;
+	////auto dEnd = lineA.end.x;
+	////auto pEnd = lineA.end.y;
+	////auto dInc = clamp(deltaX, -1, 1);
+	////auto pInc = clamp(deltaY, -1, 1);
+
+	////const auto flipped = abs(deltaX) < abs(deltaY);
+	////if (flipped) {
+	////	std::swap(driving, passive);
+	////	std::swap(dEnd, pEnd);
+	////	std::swap(dInc, pInc);
+	////}
+
+	////auto error = abs(slope) - 1.0;
+
+	////while (driving != dEnd) {
+	////	drawPixel(flipped ? coordinate_type(passive, driving)
+	////		: coordinate_type(driving, passive),
+	////		lineA.color, surface);
+
+	////	if (error >= 0.0) {
+	////		passive += pInc;
+	////		--error;
+	////	}
+	////	driving += dInc;
+	////	error += abs(slope);
+	////}
 }
 
 double degToRad(double theta) {
@@ -277,7 +345,11 @@ int main(int, char**) {
 	auto s_window = SDL_CreateWindow("Pretty little lines", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280u, 720u, 0u); // Better than the prev window name I guess
 	auto s_surface = SDL_GetWindowSurface(s_window);
 
-
+	float a = 2;
+	int b = intPart(a);
+	int c = round(a);
+	float d = fractionalPart(a);
+	float e = rFractionalPart(a);
 
 
 	SDL_Event s_event;
