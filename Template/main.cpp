@@ -136,7 +136,8 @@ int round(int x) {
 	return int(x + 0.5);
 }
 
-float fractionalPart(float x) {
+template<typename T>
+T fractionalPart(T x) {
 	if (x < 0) {
 		return 1 - (x - floor(x));
 	}
@@ -209,21 +210,8 @@ void drawLine(const line_type& lineIn, color_type bgColor, SDL_Surface* surface)
 	auto xPixel1 = xEnd;
 	auto yPixel1 = intPart(yEnd);
 
-	color_type tempCol;
-	tempCol.r = 160;
-	tempCol.g = 211;
-	tempCol.b = 79;
-
-	float mix = 0.5;
-	color_type tempCol2 = tempCol + color_type::blue;
-	color_type tempCol3 = tempCol * 0.1;
-	color_type tempCol4 = pixelMix(tempCol, bgColor, mix);
-
-
 	color_type pixel1Color = pixelMix(lineA.color, bgColor, rFractionalPart(yEnd)*xGap);
 	color_type pixel2Color = pixelMix(lineA.color, bgColor, fractionalPart(yEnd)*xGap);
-
-
 
 	if (steep){
 		drawPixel({ yPixel1,   xPixel1 }, pixel1Color, surface);
@@ -307,13 +295,13 @@ void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 
 	while (x_n >= y_n) {
 		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x - x_n, circle.centre.y - y_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x + y_n, circle.centre.y + x_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x + y_n, circle.centre.y - x_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x - y_n, circle.centre.y + x_n }, circle.color, s_surface);
-		drawPixel({ circle.centre.x - y_n, circle.centre.y - x_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x - x_n, circle.centre.y - y_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x + y_n, circle.centre.y + x_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x + y_n, circle.centre.y - x_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x - y_n, circle.centre.y + x_n }, circle.color, s_surface);
+		//drawPixel({ circle.centre.x - y_n, circle.centre.y - x_n }, circle.color, s_surface);
 
 
 		++y_n;
