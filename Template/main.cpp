@@ -29,9 +29,6 @@ public:
 
 	std::uint8_t b, g, r, a;
 
-	color_type operator *(float);
-	color_type operator +(color_type);
-
 	static const color_type black;
 	static const color_type red;
 	static const color_type green;
@@ -58,22 +55,27 @@ inline T clamp(T x, T a, T b) {
 	return std::max(std::min(x, b), a);
 }
 
-color_type color_type::operator*(float multiplier) {
+template<typename T>
+auto operator * (T multiplier, const color_type &color) {
 	color_type adjustedColor;
-	adjustedColor.r = r * clamp(multiplier, float(0), float(1));
-	adjustedColor.g = g * clamp(multiplier, float(0), float(1));
-	adjustedColor.b = b * clamp(multiplier, float(0), float(1));
+	adjustedColor.r = color.r * clamp(multiplier, float(0), float(1));
+	adjustedColor.g = color.g * clamp(multiplier, float(0), float(1));
+	adjustedColor.b = color.b * clamp(multiplier, float(0), float(1));
 	return adjustedColor;
 }
 
-color_type color_type::operator+(color_type addColor) {
-	color_type adjustedColor;
-	adjustedColor.r = clamp(r + addColor.r, 0, 255);
-	adjustedColor.g = clamp(g + addColor.g, 0, 255);
-	adjustedColor.b = clamp(b + addColor.b, 0, 255);
-	return adjustedColor;
+template<typename T>
+auto operator * (const color_type &color, T multiplier) {
+	return multiplier*color;
 }
 
+auto operator + (const color_type &startColor, const color_type &addColor) {
+	color_type adjustedColor;
+	adjustedColor.r = clamp(startColor.r + addColor.r, 0, 255);
+	adjustedColor.g = clamp(startColor.g + addColor.g, 0, 255);
+	adjustedColor.b = clamp(startColor.b + addColor.b, 0, 255);
+	return adjustedColor;
+}
 
 
 struct coordinate_type {
@@ -148,8 +150,8 @@ float rFractionalPart(float x) {
 	return 1 - fractionalPart(x);
 }
 
-color_type pixelMix(color_type foreground, color_type background, float fraction) {
-	color_type newColor = background * (1 - fraction) + foreground * fraction;
+color_type pixelMix(color_type foreground, const color_type &background, float fraction) {
+	color_type newColor = (1 - fraction) * background + foreground * fraction;
 	return newColor;
 }
 
