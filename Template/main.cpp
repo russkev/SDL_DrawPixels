@@ -288,14 +288,27 @@ void drawRadialLine(const coordinate_type centre, double theta, int radiusStart,
 	return;
 }
 
-void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
-	int x_n = circle.radius;
-	int y_n = 0;
-	int err = 0;
+void drawCircle(const circle_type& circle, color_type bgColor, SDL_Surface* s_surface) {
+	int x_p = 0, y_p = circle.radius, x_n = x_p, y_n = y_p;
+	float E, SE, opacity;
+	color_type pixel1Color, pixel2Color;
 
-	while (x_n >= y_n) {
-		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }, circle.color, s_surface);
+	while (y_n >= x_n) {
+		++x_n;
+		if (2 * (x_p - y_p + 1) > 0) {
+			--y_p;
+		}
+
+		E = 2 * x_p + 3;
+		SE = 2 * (3*x_p + y_p + 2);
+		opacity = (E / (E - SE));
+
+		pixel1Color = pixelMix(circle.color, bgColor, rFractionalPart(opacity));
+		pixel2Color = pixelMix(circle.color, bgColor, opacity);
+
+		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n     }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n - 1 }, pixel2Color, s_surface);
+		//drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }2 * , circle.color, s_surface);
 		//drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
 		//drawPixel({ circle.centre.x - x_n, circle.centre.y - y_n }, circle.color, s_surface);
 		//drawPixel({ circle.centre.x + y_n, circle.centre.y + x_n }, circle.color, s_surface);
@@ -303,14 +316,8 @@ void drawCircle(const circle_type& circle, SDL_Surface* s_surface) {
 		//drawPixel({ circle.centre.x - y_n, circle.centre.y + x_n }, circle.color, s_surface);
 		//drawPixel({ circle.centre.x - y_n, circle.centre.y - x_n }, circle.color, s_surface);
 
-
-		++y_n;
-		err += (1 + 2 * y_n);
-		if (2 * (err - x_n) + 1 > 0)
-		{
-			--x_n;
-			err += 1 - 2 * x_n;
-		}
+		x_p = x_n;
+		//y_p = y_n;
 	}
 }
 
@@ -343,7 +350,7 @@ void drawClock(SDL_Surface* s_surface) {
 	static const int clockRadius = 300;
 	static const auto circleA = circle_type(centreSurface, clockRadius, color_type::blue);
 	
-	drawCircle(circleA, s_surface);
+	drawCircle(circleA, color_type::white, s_surface);
 	drawMinuteLine(centreSurface, clockRadius, s_surface);
 	drawHourLine(centreSurface, clockRadius, s_surface);
 
