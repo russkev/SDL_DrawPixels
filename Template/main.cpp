@@ -150,6 +150,11 @@ float rFractionalPart(float x) {
 	return 1 - fractionalPart(x);
 }
 
+template<typename T, typename U>
+float height(T radius, U length) {
+	return sqrt(radius*radius - length*length);
+}
+
 color_type pixelMix(color_type foreground, const color_type &background, float fraction) {
 	color_type newColor = (1 - fraction) * background + foreground * fraction;
 	return newColor;
@@ -291,35 +296,44 @@ void drawRadialLine(const coordinate_type centre, double theta, int radiusStart,
 }
 
 void drawCircle(const circle_type& circle, color_type bgColor, SDL_Surface* s_surface) {
-	int x_p = 0, y_p = circle.radius, x_n = x_p, y_n = y_p;
-	float E, SE, opacity;
+	int x = 0, r = circle.radius, y = r;
+	float d;
 	color_type pixel1Color, pixel2Color;
 
-	while (y_n >= x_n) {
-		++x_n;
-		if (2 * (x_p - y_p + 1) > 0) {
-			--y_p;
+	while (y >= x) {
+		d = height(r, x);
+		if (d < y) {
+			--y;
 		}
+		pixel1Color = pixelMix(circle.color, bgColor, fractionalPart(d));
+		pixel2Color = pixelMix(circle.color, bgColor, rFractionalPart(d));
 
-		E = 2 * x_p + 3;
-		SE = 2 * (3*x_p + y_p + 2);
-		opacity = (E / (E - SE));
 
-		pixel1Color = pixelMix(circle.color, bgColor, rFractionalPart(opacity));
-		pixel2Color = pixelMix(circle.color, bgColor, opacity);
+		drawPixel({ circle.centre.x + x, circle.centre.y + y     }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x + x, circle.centre.y + y - 1 }, pixel2Color, s_surface);
 
-		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n     }, pixel1Color, s_surface);
-		drawPixel({ circle.centre.x + x_n, circle.centre.y + y_n - 1 }, pixel2Color, s_surface);
-		//drawPixel({ circle.centre.x + x_n, circle.centre.y - y_n }2 * , circle.color, s_surface);
-		//drawPixel({ circle.centre.x - x_n, circle.centre.y + y_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x - x_n, circle.centre.y - y_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x + y_n, circle.centre.y + x_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x + y_n, circle.centre.y - x_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x - y_n, circle.centre.y + x_n }, circle.color, s_surface);
-		//drawPixel({ circle.centre.x - y_n, circle.centre.y - x_n }, circle.color, s_surface);
+		drawPixel({ circle.centre.x + x, circle.centre.y - y }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x + x, circle.centre.y - y + 1 }, pixel2Color, s_surface);
 
-		x_p = x_n;
-		//y_p = y_n;
+		drawPixel({ circle.centre.x - x, circle.centre.y + y }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x - x, circle.centre.y + y - 1 }, pixel2Color, s_surface);
+
+		drawPixel({ circle.centre.x - x, circle.centre.y - y }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x - x, circle.centre.y - y + 1 }, pixel2Color, s_surface);
+
+		drawPixel({ circle.centre.x + y, circle.centre.y + x }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x + y - 1, circle.centre.y + x }, pixel2Color, s_surface);
+
+		drawPixel({ circle.centre.x + y, circle.centre.y - x }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x + y - 1, circle.centre.y - x }, pixel2Color, s_surface);
+
+		drawPixel({ circle.centre.x - y, circle.centre.y + x }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x - y + 1, circle.centre.y + x }, pixel2Color, s_surface);
+
+		drawPixel({ circle.centre.x - y, circle.centre.y - x }, pixel1Color, s_surface);
+		drawPixel({ circle.centre.x - y + 1, circle.centre.y - x }, pixel2Color, s_surface);
+
+		++x;
 	}
 }
 
