@@ -7,7 +7,7 @@
 int main(int, char**) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	SDL_Window* window;
+	SDL_Window* window = NULL;  //Good practice to always initialize a pointer variable
 
 	window = SDL_CreateWindow("Title goes here",  //Title of window
 		SDL_WINDOWPOS_UNDEFINED, //Lets window manager to choose where the window will go.
@@ -22,15 +22,33 @@ int main(int, char**) {
 		<< SDL_GetError << std::endl;
 	}
 
-	SDL_Delay(6000);
+	SDL_Surface *screen = SDL_GetWindowSurface(window);
+
+	Uint32 red = SDL_MapRGB(screen->format, 255, 0, 0);
+	SDL_FillRect(screen, NULL, red);
+	SDL_UpdateWindowSurface(window);
+
+	int x, y, w, h;
+
+	
+
+	SDL_Event event;
+	bool running = true;
+	
+	// // While program is running, poll event
+	while (running) {
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				running = false;
+				break;
+			}
+		}
+		SDL_GetWindowPosition(window, &x, &y);
+		std::cout << x << ", " << y << std::endl;
+	}
 
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-
-	for (int i = 0; i < 100; i++) {
-		std::cout << "do something";
-	}
-
 
 	return 0;
 }
